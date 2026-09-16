@@ -1,0 +1,620 @@
+# <!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>식품 구성 자전거 퀴즈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+        }
+
+        .food-item {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .food-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .bicycle-wheel {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 8px solid #334155;
+            margin: 0 auto;
+            overflow: hidden;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            background-color: white;
+        }
+
+        .spoke {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background-color: #94a3b8;
+            transform-origin: center left;
+        }
+
+        .center-hub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background-color: #475569;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        
+        .segment {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(50% 50%, 100% 0, 100% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .segment:hover {
+            opacity: 0.8;
+        }
+        
+        .segment-1 { background-color: #fca5a5; transform: rotate(0deg); clip-path: polygon(50% 50%, 100% 0, 100% 33%); } /* 곡류 */
+        .segment-2 { background-color: #fcd34d; transform: rotate(0deg); clip-path: polygon(50% 50%, 100% 33%, 100% 66%); } /* 고기,생선,달걀,콩류 */
+        .segment-3 { background-color: #86efac; transform: rotate(0deg); clip-path: polygon(50% 50%, 100% 66%, 100% 100%); } /* 채소류 */
+        .segment-4 { background-color: #93c5fd; transform: rotate(180deg); clip-path: polygon(50% 50%, 100% 0, 100% 33%); } /* 과일류 */
+        .segment-5 { background-color: #c4b5fd; transform: rotate(180deg); clip-path: polygon(50% 50%, 100% 33%, 100% 66%); } /* 우유,유제품류 */
+        .segment-6 { background-color: #cbd5e1; transform: rotate(180deg); clip-path: polygon(50% 50%, 100% 66%, 100% 100%); } /* 유지,당류 (often tiny or not in main wheel, included for completeness) */
+
+        /* Labels for segments */
+        .label-1 { position: absolute; top: 15%; right: 15%; z-index: 5; font-size: 0.9rem;}
+        .label-2 { position: absolute; top: 48%; right: 5%; z-index: 5; font-size: 0.9rem; text-align: right;}
+        .label-3 { position: absolute; bottom: 15%; right: 15%; z-index: 5; font-size: 0.9rem;}
+        .label-4 { position: absolute; top: 15%; left: 15%; z-index: 5; font-size: 0.9rem;}
+        .label-5 { position: absolute; top: 48%; left: 5%; z-index: 5; font-size: 0.9rem;}
+        .label-6 { position: absolute; bottom: 15%; left: 15%; z-index: 5; font-size: 0.9rem;}
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-25%); }
+        }
+
+        .animate-bounce-slow {
+            animation: bounce 2s infinite;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e2e8f0;
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #10b981;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+
+        .bicycle-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            position: relative;
+            margin-top: 3rem;
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+        
+        .front-wheel {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            border: 12px solid #334155;
+            background-color: #eff6ff;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            transition: transform 0.5s ease-out;
+        }
+
+        .front-wheel-spoke {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: #94a3b8;
+            transform-origin: center;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .bicycle-container {
+                transform: scale(0.65);
+                transform-origin: top center;
+                margin-bottom: -80px;
+            }
+        }
+        @media (max-width: 480px) {
+            .bicycle-container {
+                transform: scale(0.5);
+                transform-origin: top center;
+                margin-bottom: -130px;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col">
+
+    <header class="bg-green-500 text-white p-4 shadow-md text-center">
+        <h1 class="text-3xl font-bold">자전거를 타고 건강마을로!</h1>
+        <p class="text-lg mt-2" id="level-display">레벨 1</p>
+    </header>
+
+    <main class="flex-grow container mx-auto p-4 flex flex-col items-center justify-start max-w-4xl relative overflow-hidden">
+        
+        <!-- Background scenery elements -->
+        <div class="absolute top-10 left-10 opacity-20 text-6xl">☁️</div>
+        <div class="absolute top-20 right-20 opacity-20 text-6xl">☁️</div>
+        <div class="absolute bottom-0 left-0 w-full h-1/3 bg-green-200 -z-10 rounded-t-[100px]"></div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="flex flex-col items-center justify-center h-full w-full bg-white bg-opacity-90 rounded-2xl shadow-xl p-8 text-center z-20">
+            <div class="text-8xl mb-6 animate-bounce-slow">🚲</div>
+            <h2 class="text-4xl font-bold text-green-600 mb-4">식품 구성 자전거 퀴즈</h2>
+            <p class="text-xl mb-6 text-slate-600">올바른 식품군을 선택하여 자전거를 굴려<br>건강마을까지 도착해보세요!</p>
+            <div class="bg-yellow-100 p-4 rounded-lg mb-8 text-left">
+                <h3 class="font-bold text-lg mb-2">게임 방법:</h3>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>화면에 나오는 식품을 보고 알맞은 식품군을 클릭하세요.</li>
+                    <li>한 레벨당 10문제가 출제됩니다.</li>
+                    <li>정답을 맞히면 자전거가 앞으로 나아갑니다.</li>
+                    <li>레벨 5를 완료하면 건강마을에 도착합니다!</li>
+                </ul>
+            </div>
+            <button onclick="startGame()" class="bg-green-500 hover:bg-green-600 text-white text-2xl font-bold py-4 px-10 rounded-full shadow-lg transform transition hover:scale-105">
+                출발하기!
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden flex-col items-center w-full mt-4">
+            
+            <!-- Progress indicator -->
+            <div class="w-full max-w-2xl mb-4">
+                <div class="flex justify-between text-sm font-bold text-green-700 mb-1">
+                    <span>출발</span>
+                    <span id="progress-text">0 / 10 문제</span>
+                    <span>건강마을 (Lv.5)</span>
+                </div>
+                <div class="progress-bar-container relative">
+                    <div id="overall-progress" class="progress-bar" style="width: 0%;"></div>
+                    <div id="bicycle-icon" class="absolute top-1/2 -translate-y-1/2 -ml-3 text-2xl transition-all duration-500" style="left: 0%;">🚴</div>
+                </div>
+            </div>
+
+            <!-- Current Question -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-4 border-green-100 w-full max-w-2xl text-center mb-8">
+                <p class="text-gray-500 text-sm mb-2" id="question-counter">문제 1 / 10</p>
+                <h2 class="text-3xl font-bold mb-4">이 식품은 어느 식품군일까요?</h2>
+                <div class="bg-slate-100 p-8 rounded-xl inline-block mb-4">
+                    <span id="current-food-emoji" class="text-6xl drop-shadow-md">🍎</span>
+                </div>
+                <p id="current-food-name" class="text-2xl font-bold text-slate-800">사과</p>
+        </div>
+
+        <!-- The Bicycle Container (Front & Back Wheels + Frame) -->
+        <div class="bicycle-container w-full max-w-[600px] mx-auto mb-12">
+            <div class="relative flex items-end justify-between w-[580px]">
+                <!-- SVG Bike Frame -->
+                <svg class="absolute w-full h-full top-[-80px] left-0 pointer-events-none z-0 overflow-visible" viewBox="0 0 580 300">
+                    <!-- Frame Geometry -->
+                    <line x1="125" y1="175" x2="280" y2="50" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+                    <line x1="280" y1="50" x2="430" y2="150" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+                    <line x1="125" y1="175" x2="430" y2="150" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+                    <!-- Handlebar -->
+                    <line x1="125" y1="175" x2="100" y2="20" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+                    <path d="M 60 20 Q 100 -10 140 20" fill="none" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+                    <!-- Seat -->
+                    <line x1="280" y1="50" x2="260" y2="0" stroke="#475569" stroke-width="12" stroke-linecap="round"/>
+                    <rect x="220" y="-15" width="80" height="20" rx="10" fill="#1e293b" />
+                </svg>
+
+                <!-- Front Wheel (Water) -->
+                <div class="front-wheel z-10 shrink-0" id="front-wheel">
+                    <div class="front-wheel-spoke" style="transform: rotate(0deg)"></div>
+                    <div class="front-wheel-spoke" style="transform: rotate(45deg)"></div>
+                    <div class="front-wheel-spoke" style="transform: rotate(90deg)"></div>
+                    <div class="front-wheel-spoke" style="transform: rotate(135deg)"></div>
+                    <div class="center-hub"></div>
+                    <div class="absolute bg-white p-2 rounded-full shadow-lg z-20 text-5xl">💧</div>
+                    <div class="absolute -top-12 bg-blue-100 text-blue-700 font-bold px-4 py-2 rounded-full text-xl border-2 border-blue-300 shadow whitespace-nowrap">수분 (앞바퀴)</div>
+                </div>
+
+                <!-- Back Wheel (Food Groups - Interactive) -->
+                <div class="bicycle-wheel z-10 shrink-0" id="wheel-options">
+                    <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-green-100 text-green-700 font-bold px-4 py-2 rounded-full text-xl border-2 border-green-300 shadow whitespace-nowrap z-20">식품군 선택</div>
+                    <div class="center-hub"></div>
+                    
+                    <!-- Segment 1: 곡류 -->
+                    <div class="segment segment-1" onclick="checkAnswer('곡류')"></div>
+                    <span class="label-1 font-bold" onclick="checkAnswer('곡류')" style="cursor:pointer">곡류<br>🍚🍞</span>
+                    
+                    <!-- Segment 2: 고기,생선,달걀,콩류 -->
+                    <div class="segment segment-2" onclick="checkAnswer('고기·생선·달걀·콩류')"></div>
+                    <span class="label-2 font-bold" onclick="checkAnswer('고기·생선·달걀·콩류')" style="cursor:pointer">고기·생선<br>달걀·콩류<br>🥩🥚</span>
+                    
+                    <!-- Segment 3: 채소류 -->
+                    <div class="segment segment-3" onclick="checkAnswer('채소류')"></div>
+                    <span class="label-3 font-bold" onclick="checkAnswer('채소류')" style="cursor:pointer">채소류<br>🥦🥕</span>
+                    
+                    <!-- Segment 4: 과일류 -->
+                    <div class="segment segment-4" onclick="checkAnswer('과일류')"></div>
+                    <span class="label-4 font-bold" onclick="checkAnswer('과일류')" style="cursor:pointer">과일류<br>🍎🍇</span>
+                    
+                    <!-- Segment 5: 우유,유제품류 -->
+                    <div class="segment segment-5" onclick="checkAnswer('우유·유제품류')"></div>
+                    <span class="label-5 font-bold" onclick="checkAnswer('우유·유제품류')" style="cursor:pointer">우유·유제품<br>🥛🧀</span>
+                    
+                    <!-- Segment 6: 유지,당류 -->
+                <div class="segment segment-6" onclick="checkAnswer('유지·당류')"></div>
+                <span class="label-6 font-bold" onclick="checkAnswer('유지·당류')" style="cursor:pointer">유지·당류<br>🧈🍬</span>
+            </div>
+            </div>
+        </div>
+        
+        <p class="text-slate-500 animate-pulse font-bold text-lg">알맞은 자전거 뒷바퀴 칸을 클릭하세요!</p>
+    </div>
+
+    <!-- Feedback Modal (Correct/Incorrect) -->
+        <div id="feedback-modal" class="modal">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 transform transition-all scale-95">
+                <div id="feedback-icon" class="text-6xl mb-4">✅</div>
+                <h3 id="feedback-title" class="text-3xl font-bold mb-2">정답입니다!</h3>
+                <p id="feedback-message" class="text-lg text-slate-600 mb-6">사과는 과일류입니다.</p>
+                <button onclick="nextQuestion()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full w-full text-xl shadow">
+                다음 문제
+            </button>
+        </div>
+    </div>
+
+    <!-- Water Drinking Modal (Replaces Level Up Modal) -->
+    <div id="water-modal" class="modal">
+        <div class="bg-blue-50 p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 border-4 border-blue-400 transform transition-all">
+            <h3 class="text-4xl font-bold text-blue-600 mb-4">레벨 클리어! 🎉</h3>
+            <p class="text-xl text-slate-700 mb-6 font-bold">식품구성자전거의 앞바퀴는 <span class="text-blue-500">'수분'</span>입니다.<br>다음 레벨을 위해 물을 마셔주세요!</p>
+            
+            <!-- Water Glass Interaction -->
+            <div id="water-glass" class="text-9xl mb-4 cursor-pointer transform transition-transform hover:scale-110 active:scale-95 inline-block select-none" onclick="drinkWater()">
+                🥛
+            </div>
+            
+            <p id="water-instruction" class="text-lg text-blue-500 animate-pulse font-bold mb-4">물컵을 클릭해서 꿀꺽꿀꺽 마시세요!</p>
+            
+            <button id="btn-next-level" onclick="startNextLevel()" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full w-full text-xl shadow-lg mt-4 transform transition hover:scale-105">
+                상쾌하게 다음 레벨로 🚴
+            </button>
+        </div>
+    </div>
+
+    <!-- End Screen (Healthy Village) -->
+        <div id="end-screen" class="hidden flex-col items-center justify-center h-full w-full bg-white bg-opacity-95 rounded-2xl shadow-xl p-8 text-center z-20">
+            <div class="text-8xl mb-6 animate-bounce">🏡🌈</div>
+            <h2 class="text-5xl font-bold text-green-600 mb-4">건강마을 도착!</h2>
+            <p class="text-2xl mb-6 text-slate-700">축하합니다! 식품 구성 자전거를 완벽하게 이해하고 건강마을에 무사히 도착했어요.</p>
+            <div class="bg-green-100 p-6 rounded-xl mb-8">
+                <p class="text-xl font-bold text-green-800 mb-2">당신의 성적</p>
+                <p class="text-2xl" id="final-score">총 50문제 중 45문제 정답</p>
+            </div>
+            <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white text-xl font-bold py-3 px-8 rounded-full shadow-lg">
+                처음부터 다시하기
+            </button>
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-100 p-2 text-center text-sm text-slate-500 mt-auto">
+        식품 구성 자전거 퀴즈 앱 | 영양 교육
+    </footer>
+
+    <script>
+        // 100 Food Items Database categorized
+        const foodDatabase = [
+            // 1. 곡류 (Grains) - 20 items
+            { name: "쌀밥", emoji: "🍚", group: "곡류" }, { name: "식빵", emoji: "🍞", group: "곡류" },
+            { name: "고구마", emoji: "🍠", group: "곡류" }, { name: "감자", emoji: "🥔", group: "곡류" },
+            { name: "국수", emoji: "🍜", group: "곡류" }, { name: "시리얼", emoji: "🥣", group: "곡류" },
+            { name: "떡", emoji: "🍡", group: "곡류" }, { name: "옥수수", emoji: "🌽", group: "곡류" },
+            { name: "보리밥", emoji: "🍚", group: "곡류" }, { name: "현미밥", emoji: "🍚", group: "곡류" },
+            { name: "오트밀", emoji: "🥣", group: "곡류" }, { name: "바게트", emoji: "🥖", group: "곡류" },
+            { name: "베이글", emoji: "🥯", group: "곡류" }, { name: "크래커", emoji: "🍘", group: "곡류" },
+            { name: "수제비", emoji: "🍲", group: "곡류" }, { name: "죽", emoji: "🥣", group: "곡류" },
+            { name: "누룽지", emoji: "🍘", group: "곡류" }, { name: "잡곡밥", emoji: "🍚", group: "곡류" },
+            { name: "파스타", emoji: "🍝", group: "곡류" }, { name: "메밀국수", emoji: "🍜", group: "곡류" },
+
+            // 2. 고기·생선·달걀·콩류 (Meat/Fish/Egg/Legumes) - 20 items
+            { name: "소고기", emoji: "🥩", group: "고기·생선·달걀·콩류" }, { name: "돼지고기", emoji: "🥓", group: "고기·생선·달걀·콩류" },
+            { name: "닭고기", emoji: "🍗", group: "고기·생선·달걀·콩류" }, { name: "생선", emoji: "🐟", group: "고기·생선·달걀·콩류" },
+            { name: "달걀", emoji: "🥚", group: "고기·생선·달걀·콩류" }, { name: "두부", emoji: "🧫", group: "고기·생선·달걀·콩류" },
+            { name: "오징어", emoji: "🦑", group: "고기·생선·달걀·콩류" }, { name: "새우", emoji: "🦐", group: "고기·생선·달걀·콩류" },
+            { name: "콩", emoji: "🫘", group: "고기·생선·달걀·콩류" }, { name: "땅콩", emoji: "🥜", group: "고기·생선·달걀·콩류" },
+            { name: "아몬드", emoji: "🌰", group: "고기·생선·달걀·콩류" }, { name: "호두", emoji: "🌰", group: "고기·생선·달걀·콩류" },
+            { name: "참치", emoji: "🐟", group: "고기·생선·달걀·콩류" }, { name: "오리고기", emoji: "🦆", group: "고기·생선·달걀·콩류" },
+            { name: "멸치", emoji: "🐟", group: "고기·생선·달걀·콩류" }, { name: "조개", emoji: "🦪", group: "고기·생선·달걀·콩류" },
+            { name: "게", emoji: "🦀", group: "고기·생선·달걀·콩류" }, { name: "어묵", emoji: "🍢", group: "고기·생선·달걀·콩류" },
+            { name: "메추리알", emoji: "🥚", group: "고기·생선·달걀·콩류" }, { name: "강낭콩", emoji: "🫘", group: "고기·생선·달걀·콩류" },
+
+            // 3. 채소류 (Vegetables) - 20 items
+            { name: "배추", emoji: "🥬", group: "채소류" }, { name: "무", emoji: "🧅", group: "채소류" },
+            { name: "당근", emoji: "🥕", group: "채소류" }, { name: "오이", emoji: "🥒", group: "채소류" },
+            { name: "상추", emoji: "🥬", group: "채소류" }, { name: "시금치", emoji: "🥬", group: "채소류" },
+            { name: "양파", emoji: "🧅", group: "채소류" }, { name: "마늘", emoji: "🧄", group: "채소류" },
+            { name: "버섯", emoji: "🍄", group: "채소류" }, { name: "토마토", emoji: "🍅", group: "채소류" },
+            { name: "가지", emoji: "🍆", group: "채소류" }, { name: "호박", emoji: "🎃", group: "채소류" },
+            { name: "파프리카", emoji: "🫑", group: "채소류" }, { name: "브로콜리", emoji: "🥦", group: "채소류" },
+            { name: "파", emoji: "🧅", group: "채소류" }, { name: "콩나물", emoji: "🌱", group: "채소류" },
+            { name: "고사리", emoji: "🌿", group: "채소류" }, { name: "깻잎", emoji: "🍃", group: "채소류" },
+            { name: "피망", emoji: "🫑", group: "채소류" }, { name: "양배추", emoji: "🥬", group: "채소류" },
+
+            // 4. 과일류 (Fruits) - 20 items
+            { name: "사과", emoji: "🍎", group: "과일류" }, { name: "바나나", emoji: "🍌", group: "과일류" },
+            { name: "포도", emoji: "🍇", group: "과일류" }, { name: "수박", emoji: "🍉", group: "과일류" },
+            { name: "귤", emoji: "🍊", group: "과일류" }, { name: "딸기", emoji: "🍓", group: "과일류" },
+            { name: "복숭아", emoji: "🍑", group: "과일류" }, { name: "오렌지", emoji: "🍊", group: "과일류" },
+            { name: "파인애플", emoji: "🍍", group: "과일류" }, { name: "키위", emoji: "🥝", group: "과일류" },
+            { name: "망고", emoji: "🥭", group: "과일류" }, { name: "참외", emoji: "🍈", group: "과일류" },
+            { name: "블루베리", emoji: "🫐", group: "과일류" }, { name: "레몬", emoji: "🍋", group: "과일류" },
+            { name: "체리", emoji: "🍒", group: "과일류" }, { name: "배", emoji: "🍐", group: "과일류" },
+            { name: "멜론", emoji: "🍈", group: "과일류" }, { name: "자두", emoji: "🍑", group: "과일류" },
+            { name: "석류", emoji: "🍎", group: "과일류" }, { name: "감", emoji: "🍊", group: "과일류" },
+
+            // 5. 우유·유제품류 (Dairy) - 10 items
+            { name: "우유", emoji: "🥛", group: "우유·유제품류" }, { name: "치즈", emoji: "🧀", group: "우유·유제품류" },
+            { name: "요구르트", emoji: "🧃", group: "우유·유제품류" }, { name: "아이스크림", emoji: "🍦", group: "우유·유제품류" },
+            { name: "버터", emoji: "🧈", group: "우유·유제품류" }, { name: "생크림", emoji: "🧁", group: "우유·유제품류" },
+            { name: "연유", emoji: "🥫", group: "우유·유제품류" }, { name: "초코우유", emoji: "🧃", group: "우유·유제품류" },
+            { name: "딸기우유", emoji: "🧃", group: "우유·유제품류" }, { name: "가공치즈", emoji: "🧀", group: "우유·유제품류" },
+
+            // 6. 유지·당류 (Oils/Sweets) - 10 items
+            { name: "설탕", emoji: "🧂", group: "유지·당류" }, { name: "꿀", emoji: "🍯", group: "유지·당류" },
+            { name: "초콜릿", emoji: "🍫", group: "유지·당류" }, { name: "사탕", emoji: "🍬", group: "유지·당류" },
+            { name: "식용유", emoji: "🛢️", group: "유지·당류" }, { name: "마요네즈", emoji: "🥣", group: "유지·당류" },
+            { name: "참기름", emoji: "🍾", group: "유지·당류" }, { name: "케이크", emoji: "🍰", group: "유지·당류" },
+            { name: "과자", emoji: "🍪", group: "유지·당류" }, { name: "탄산음료", emoji: "🥤", group: "유지·당류" }
+        ];
+
+        const TOTAL_LEVELS = 5;
+        const QUESTIONS_PER_LEVEL = 10;
+        
+        let currentLevel = 1;
+        let questionCount = 0;
+        let totalCorrect = 0;
+        let currentLevelQuestions = [];
+        let currentQuestionIndex = 0;
+        let isWaitingForNext = false;
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const endScreen = document.getElementById('end-screen');
+        const levelDisplay = document.getElementById('level-display');
+        const progressText = document.getElementById('progress-text');
+        const overallProgress = document.getElementById('overall-progress');
+        const bicycleIcon = document.getElementById('bicycle-icon');
+        const questionCounter = document.getElementById('question-counter');
+        const currentFoodEmoji = document.getElementById('current-food-emoji');
+    const currentFoodName = document.getElementById('current-food-name');
+    
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackIcon = document.getElementById('feedback-icon');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackMessage = document.getElementById('feedback-message');
+    
+    const waterModal = document.getElementById('water-modal');
+    const waterGlass = document.getElementById('water-glass');
+    const waterInstruction = document.getElementById('water-instruction');
+    const btnNextLevel = document.getElementById('btn-next-level');
+
+    const finalScore = document.getElementById('final-score');
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            quizScreen.classList.add('flex');
+            currentLevel = 1;
+            totalCorrect = 0;
+            startLevel();
+        }
+
+        function startLevel() {
+        levelDisplay.textContent = `레벨 ${currentLevel}`;
+        questionCount = 0;
+        currentQuestionIndex = 0;
+        
+        // 데이터베이스에서 섞은 뒤 정확히 10개의 문제만 추출 (QUESTIONS_PER_LEVEL = 10)
+        const shuffledDB = shuffleArray([...foodDatabase]);
+        currentLevelQuestions = shuffledDB.slice(0, QUESTIONS_PER_LEVEL);
+        
+        updateProgressUI();
+        loadQuestion();
+    }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= currentLevelQuestions.length) {
+                handleLevelComplete();
+                return;
+            }
+
+            const food = currentLevelQuestions[currentQuestionIndex];
+            currentFoodEmoji.textContent = food.emoji;
+            currentFoodName.textContent = food.name;
+            questionCounter.textContent = `문제 ${currentQuestionIndex + 1} / ${QUESTIONS_PER_LEVEL}`;
+            isWaitingForNext = false;
+        }
+
+        function checkAnswer(selectedGroup) {
+            if (isWaitingForNext) return;
+            isWaitingForNext = true;
+
+            const currentFood = currentLevelQuestions[currentQuestionIndex];
+            const isCorrect = currentFood.group === selectedGroup;
+
+            showFeedback(isCorrect, currentFood, selectedGroup);
+
+            if (isCorrect) {
+            totalCorrect++;
+            // 앞바퀴와 뒷바퀴 모두 조금씩 회전하여 자전거가 앞으로 가는듯한 애니메이션
+            const wheel = document.getElementById('wheel-options');
+            const frontWheel = document.getElementById('front-wheel');
+            
+            wheel.style.transform = `rotate(${Math.random() * 360}deg)`;
+            if(frontWheel) frontWheel.style.transform = `rotate(${Math.random() * 360}deg)`;
+            
+            setTimeout(() => {
+                wheel.style.transform = 'none';
+                if(frontWheel) frontWheel.style.transform = 'none';
+            }, 500);
+        }
+    }
+
+    function showFeedback(isCorrect, food, selected) {
+            feedbackModal.classList.add('active');
+            
+            if (isCorrect) {
+                feedbackIcon.textContent = "✅";
+                feedbackTitle.textContent = "정답입니다!";
+                feedbackTitle.className = "text-3xl font-bold mb-2 text-green-600";
+                feedbackMessage.innerHTML = `<span class="font-bold">${food.name}</span>은(는) <span class="font-bold text-green-700">${food.group}</span>입니다.`;
+            } else {
+                feedbackIcon.textContent = "❌";
+                feedbackTitle.textContent = "아쉽네요!";
+                feedbackTitle.className = "text-3xl font-bold mb-2 text-red-600";
+                feedbackMessage.innerHTML = `<span class="font-bold">${food.name}</span>은(는) <span class="font-bold text-red-700">${food.group}</span>입니다.<br><span class="text-sm text-gray-500">(선택한 답: ${selected})</span>`;
+            }
+        }
+
+        function nextQuestion() {
+            feedbackModal.classList.remove('active');
+            currentQuestionIndex++;
+            updateProgressUI();
+            loadQuestion();
+        }
+
+        function updateProgressUI() {
+            // Calculate total progress across all levels
+            const totalQuestions = TOTAL_LEVELS * QUESTIONS_PER_LEVEL;
+            const currentTotalQuestion = ((currentLevel - 1) * QUESTIONS_PER_LEVEL) + currentQuestionIndex;
+            const percentage = (currentTotalQuestion / totalQuestions) * 100;
+            
+            overallProgress.style.width = `${percentage}%`;
+            bicycleIcon.style.left = `${percentage}%`;
+            
+            let displayCount = currentTotalQuestion;
+        if(displayCount > totalQuestions) displayCount = totalQuestions;
+        progressText.textContent = `총 진행: ${displayCount} / ${totalQuestions}`;
+    }
+
+    function handleLevelComplete() {
+        if (currentLevel >= TOTAL_LEVELS) {
+            showEndScreen();
+        } else {
+            showWaterModal();
+        }
+    }
+
+    function showWaterModal() {
+        waterGlass.textContent = "🥛";
+        waterGlass.classList.remove('pointer-events-none', 'opacity-50', 'scale-90');
+        waterInstruction.classList.remove('hidden');
+        btnNextLevel.classList.add('hidden');
+        
+        waterModal.classList.add('active');
+    }
+
+    function drinkWater() {
+        waterGlass.textContent = "🫙"; // 빈 물컵으로 변경
+        waterGlass.classList.add('pointer-events-none', 'opacity-50', 'scale-90');
+        
+        waterInstruction.classList.add('hidden');
+        btnNextLevel.classList.remove('hidden');
+    }
+
+    function startNextLevel() {
+        waterModal.classList.remove('active');
+        currentLevel++;
+        startLevel();
+    }
+
+    function showEndScreen() {
+            quizScreen.classList.add('hidden');
+            quizScreen.classList.remove('flex');
+            endScreen.classList.remove('hidden');
+            endScreen.classList.add('flex');
+            
+            const totalQuestions = TOTAL_LEVELS * QUESTIONS_PER_LEVEL;
+            finalScore.textContent = `총 ${totalQuestions}문제 중 ${totalCorrect}문제 정답!`;
+            
+            if(totalCorrect >= 40) {
+                finalScore.className = "text-3xl font-bold text-green-700 mt-2";
+                finalScore.innerHTML += "<br>🌟 영양 만점 지식왕! 🌟";
+            } else if (totalCorrect >= 30) {
+                finalScore.className = "text-3xl font-bold text-blue-600 mt-2";
+                finalScore.innerHTML += "<br>👍 훌륭해요!";
+            } else {
+                finalScore.className = "text-3xl font-bold text-yellow-600 mt-2";
+                finalScore.innerHTML += "<br>💪 조금 더 분발해볼까요?";
+            }
+        }
+    </script>
+</body>
+</html>
